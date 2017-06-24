@@ -7,7 +7,7 @@ Author: <a href="http://www.vjmedia.com.hk">技術組</a>
 */
 
 defined( 'ABSPATH' ) or exit();
-include_once ( 'gapi.php' );
+include_once ( 'gapi.inc.php' );
 
 add_action( 'init', array("VJPayment_Settings","exportcsv"));
 add_action( 'init', array("VJPayment_Settings","exportauthortable"));
@@ -282,7 +282,11 @@ if($scanresult){
 		
 		echo "<table id=\"vjpayment_status\"><tr><th>文章ID</th><th>文章標題</th><th>點擊</th><th>已達成</th><th>已付</th><th>尚欠</th><th>作者ID</th><th>作者Slug</th><th>Debug</th></tr>";
 		
-		include("getter.php");
+		if($mode=="general"){
+			$status=self::getstatus("general",7000);
+		}elseif($mode=="special"){
+			$status=self::getstatus("1000to10",1000);
+		}
 	
 		$totalneedpay=0; foreach($status as $row) {
 			if($row->needpay>0){
