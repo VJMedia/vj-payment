@@ -167,7 +167,7 @@ if($scanresult){
 	}
 	
 	public static function exportcsv() {
-		include("exporter.php")
+		include("exporter.php");
 		
 		error_reporting(0);
 		
