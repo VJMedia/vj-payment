@@ -8,7 +8,6 @@ Author: <a href="http://www.vjmedia.com.hk">技術組</a>
 
 defined( 'ABSPATH' ) or exit();
 include_once ( 'gapi.php' );
-include_once ( 'config.php' );
 
 add_action( 'init', array("VJPayment_Settings","exportcsv"));
 add_action( 'init', array("VJPayment_Settings","exportauthortable"));
