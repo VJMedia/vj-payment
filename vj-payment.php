@@ -252,7 +252,11 @@ if($scanresult){
 				$row->author=get_userdata(get_post_field( 'post_author', $post->id ));
 			}
 			
-			include("counter.php");
+			if($paymenttype=="general"){
+			$row->reach = array_sum(get_post_meta($row->id,"vj_gaview2",true)) >= 7000 ? 100 : 0;
+			}elseif($paymenttype=="1000to10"){
+			$row->reach = floor(array_sum(get_post_meta($row->id,"vj_gaview2",true)) * 0.01);
+			}
 			
 			$row->view=(int)array_sum(get_post_meta($row->id,"vj_gaview2",true));
 			$row->paid=get_post_meta($row->id,"vj_paid")[0] ? (int)get_post_meta($row->id,"vj_paid")[0] : 0;
