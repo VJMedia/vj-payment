@@ -5,13 +5,10 @@ Description: 聽講輔仁媒體冇稿費(好似係)
 Version: 1.0
 Author: <a href="http://www.vjmedia.com.hk">技術組</a>
 */
+
 defined( 'ABSPATH' ) or exit();
 include_once ( 'gapi.php' );
-
-/* if ( ! wp_next_scheduled( 'vjpayment_cronhook' ) ) {  wp_schedule_event( time(), 'daily', 'vjpayment_cronhook' ); } 
-function vjpayment_cron() {
-	VJPayment_Settings::scan();
-} add_action( 'vjpayment_cronhook', 'vjpayment_cron' ); */
+include_once ( 'config.php' );
 
 add_action( 'init', array("VJPayment_Settings","exportcsv"));
 add_action( 'init', array("VJPayment_Settings","exportauthortable"));
@@ -42,8 +39,6 @@ function vjpayment_addcolumns( $columns ) {
 	$columns['vj_gaview'] = "點擊";
 	return $columns;
 } add_filter( 'manage_posts_columns', 'vjpayment_addcolumns' );
-
-//--------------------------------------------------------------------------------------------------------------------------------
 
 final class VJPayment_Settings {
 	public static function authortable(){
@@ -171,31 +166,8 @@ if($scanresult){
 		exit();
 	}
 	
-	
 	public static function exportcsv() {
-		if ( isset( $_POST['vjpayment_downloadcsv'] ) || isset( $_POST['vjpayment_downloadcsvclear'] ) ) {
-			$mode="general";
-			if(isset( $_POST['vjpayment_downloadcsv'])){
-				check_admin_referer( 'vjpayment_downloadcsv', 'vjpayment_downloadcsv' );
-				$clear=false;
-			}elseif(isset( $_POST['vjpayment_downloadcsvclear'] )){
-				check_admin_referer( 'vjpayment_downloadcsvclear', 'vjpayment_downloadcsvclear' );
-				$clear=true;
-			}
-			$status=self::getstatus_new2("general",7000);
-		}elseif ( isset( $_POST['vjpayment_downloadcsv_special'] ) || isset( $_POST['vjpayment_downloadcsvclear_special'] ) ) {
-			$mode="special";
-			if(isset( $_POST['vjpayment_downloadcsv_special'])){
-				check_admin_referer( 'vjpayment_downloadcsv_special', 'vjpayment_downloadcsv_special' );
-				$clear=false;
-			}elseif(isset( $_POST['vjpayment_downloadcsvclear_special'] )){
-				check_admin_referer( 'vjpayment_downloadcsvclear_special', 'vjpayment_downloadcsvclear_special' );
-				$clear=true;
-			}
-			$status=self::getstatus_new2("1000to10",1000);
-		}else{
-			return; //Exit this function
-		}
+		include("exporter.php")
 		
 		error_reporting(0);
 		
@@ -223,57 +195,7 @@ if($scanresult){
 		exit();
 	}
 	
-	/*public static function getstatus_new($paymenttype,$viewbiggerthan){
-		if($paymenttype=="1000to10"){
-			$paymenttypequery="sheepsheep,yiuyiu";
-		}elseif($paymenttype=="general"){
-			$paymenttypequery=false;
-		}
-		
-		$meta_query=[];
-		
-		array_push($meta_query,['key' => 'vj_gaview','value' => "{$viewbiggerthan}",'compare' => '>=','type' => 'numeric',]);
-		
-		if($paymenttypequery===false){
-			array_push($meta_query,['key' => 'vjmedia_paymenttype','compare' => 'NOT EXISTS',]);
-		}elseif($paymenttypequery){
-			array_push($meta_query,['key' => 'vjmedia_paymenttype','value' => $paymenttypequery,'compare' => 'IN',]);
-		}
-	
-		$the_query = new WP_Query(['posts_per_page' => 1000, 'post_type' => 'post','meta_query' => $meta_query]);
-		
-		while ( $the_query->have_posts() ) {
-			$the_query->the_post();
-			$row=new stdClass(); 
-			$row->id=get_the_ID();
-			$row->title=get_the_title();
-			if(function_exists('coauthors_posts_links')) {
-				$i = new CoAuthorsIterator($row->id);
-				if(count($i->authordata_array) == 1){
-					$row->author=$i->authordata_array[0];
-				}else{
-						
-				}
-			}else{ the_author_posts_link($row->id); }
-			
-				if($paymenttype=="general"){
-					$row->reach = get_post_meta($row->id,"vj_gaview")[0] >= 7000 ? 100 : 0;
-				}elseif($paymenttype=="1000to10"){
-					$row->reach = floor(get_post_meta($row->id,"vj_gaview")[0] * 0.01);
-				}
-				$row->view=(int)get_post_meta($row->id,"vj_gaview")[0];
-				$row->paid=get_post_meta($row->id,"vj_paid")[0] ? (int)get_post_meta($row->id,"vj_paid")[0] : 0;
-				$row->needpay=$row->reach-$row->paid;
-			
-			if($row->needpay >0){
-				$return[]=$row;
-			}
-		}
-		return $return;
-	}*/
-	
-	
-	public static function getstatus_new2($paymenttype,$viewbiggerthan){
+	public static function getstatus($paymenttype,$viewbiggerthan){
 		if($paymenttype=="1000to10"){
 			$paymenttypequery="sheepsheep,yiuyiu";
 		}elseif($paymenttype=="general"){
@@ -309,11 +231,7 @@ if($scanresult){
 				$row->author=get_userdata(get_post_field( 'post_author', $post->id ));
 			}
 			
-			if($paymenttype=="general"){
-				$row->reach = array_sum(get_post_meta($row->id,"vj_gaview2",true)) >= 7000 ? 100 : 0;
-			}elseif($paymenttype=="1000to10"){
-				$row->reach = floor(array_sum(get_post_meta($row->id,"vj_gaview2",true)) * 0.01);
-			}
+			include("counter.php");
 			
 			$row->view=(int)array_sum(get_post_meta($row->id,"vj_gaview2",true));
 			$row->paid=get_post_meta($row->id,"vj_paid")[0] ? (int)get_post_meta($row->id,"vj_paid")[0] : 0;
@@ -343,11 +261,7 @@ if($scanresult){
 		
 		echo "<table id=\"vjpayment_status\"><tr><th>文章ID</th><th>文章標題</th><th>點擊</th><th>已達成</th><th>已付</th><th>尚欠</th><th>作者ID</th><th>作者Slug</th><th>Debug</th></tr>";
 		
-		if($mode=="general"){
-			$status=self::getstatus_new2("general",7000);
-		}elseif($mode=="special"){
-			$status=self::getstatus_new2("1000to10",1000);
-		}
+		include("getter.php");
 	
 		$totalneedpay=0; foreach($status as $row) {
 			if($row->needpay>0){
@@ -410,58 +324,4 @@ function vjpayment_metabox_save($post_id, $post, $update){
     
 } add_action("save_post", "vjpayment_metabox_save", 10, 3);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	/*public static function getstatus(){ //General Only
-		$args = array(
-			'posts_per_page' => 1000, 'post_type' => 'post',
-			'meta_query' => array(
-				['key' => 'vj_gaview','value' => '7000','compare' => '>=','type' => 'numeric',],
-			)
-		); $the_query = new WP_Query( $args );
-		
-		while ( $the_query->have_posts() ) {
-			$the_query->the_post();
-			$row=new stdClass(); 
-			$row->id=get_the_ID();
-			
-			if(! get_post_meta($row->id,"vjmedia_paymenttype",true)){ //一般文章
-				$row->title=get_the_title();
-				$row->reach = get_post_meta($row->id,"vj_gaview")[0] >= 7000 ? 100 : 0;
-				$row->view=(int)get_post_meta($row->id,"vj_gaview")[0];
-				$row->paid=get_post_meta($row->id,"vj_paid")[0] ? (int)get_post_meta($row->id,"vj_paid")[0] : 0;
-				$row->needpay=$row->reach-$row->paid;
-				
-				if(function_exists('coauthors_posts_links')) { 
-					$i = new CoAuthorsIterator($id);
-					if(count($i->authordata_array) == 1){
-						$row->author=$i->authordata_array[0];
-					}else{
-						
-					}
-				}else{
-					the_author_posts_link($id);
-				}
-				
-				if($row->needpay >0){
-					$return[]=$row;
-				}
-			}
-		}
-		return $return;
-	}*/
 ?>
