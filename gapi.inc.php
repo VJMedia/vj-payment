@@ -52,13 +52,7 @@ class VJPayment_GAPI_Controller{
 			} else {
 				$timeouts = 1;
 			}
-			
-			
-			/*if ( $this->gapi_errors_handler() ) {
-				return - 23;
-			}*/
-			
-			
+						
 			$data = $this->service->data_ga->get( 'ga:' . $projectId, $from, $to, $metrics, $options );
 			$this->gadwp->config->options['api_backoff'] = 0;
 			$this->gadwp->config->set_plugin_options();
@@ -148,11 +142,12 @@ class VJPayment_GAPI_Controller{
 		//$ga->requestReportData(ga_profile_id,array('pageviews','visits','entrances','uniquePageviews'),'-visits',$filter,'2012-01-01',date('Y-m-d'),$start,result_per_page);
 		
 		$options = array( 'dimensions' => 'ga:pageTitle,ga:pagePath', /*'quotaUser' => $this->managequota . 'p' . $projectId,*/ 'sort' => '-ga:pageviews', 'max-results' => $max_result, 'filters' => 'ga:pagePath=~/articles/*/*/*/*', 'start-index'=>$start_index);
-		//var_dump($this->gadwp->config->options);	
 		$data = $this->handle_corereports( $projectId, $from, 'yesterday', 'ga:pageViews', $options );
 		
 		if ( is_numeric( $data ) ) { return $data; }
 		$gadwp_data=[]; foreach ( $data->getRows() as $row ){
+				//$row->paymenttype = get_post_meta($row->id, "vjmedia_paymenttype",true);
+				//$row->paymenttype = $row->paymenttype=="" ? "general" : $row->paymenttype;
 				$gadwp_data[] = $row;
 		}
 
