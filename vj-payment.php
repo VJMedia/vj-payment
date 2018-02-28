@@ -4,6 +4,7 @@ Plugin Name: 輔仁網: 稿費計算器
 Description: 聽講輔仁媒體冇稿費(好似係)
 Version: 1.0
 Author: <a href="http://www.vjmedia.com.hk">技術組</a>
+GitHub Plugin URI: https://github.com/VJMedia/vj-payment
 */
 
 defined( 'ABSPATH' ) or exit();
