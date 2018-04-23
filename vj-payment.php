@@ -131,13 +131,21 @@ final class VJPayment {
 		
 		if(! $_GET["clearid"]){
 			$result=$wpdb->get_results("SELECT * FROM `wp_options` WHERE option_name LIKE 'vjpayment_exportcsvclear_%'");
-			echo "<ul>";
+			
+						
 			foreach($result as $row){
-				preg_match("/^vjpayment_exportcsvclear_(.*?)$/",$row->option_name,$matches);
-				$row->clearid=$matches[1];
-				echo "<li><a href=\"?page=vjpayment_record&clearid={$row->clearid}\">".$row->option_name."</a></li>";
+				preg_match("/^vjpayment_exportcsvclear_(.*)(\d\d\d\d\d\d\d\d\d\d\d\d\d\d)$/",$row->option_name,$matches);
+				$row->clearid=($matches[1] ? $matches[1] : '').$matches[2];
+				$row->yyyymmddhhiiss=$matches[2];
 				
+				$sorted_result[$row->yyyymmddhhiiss]=$row;
 			}
+			
+			ksort($sorted_result);
+			echo "<ul>";
+				foreach($sorted_result as $key=>$row){
+					echo "<li>{$row->yyyymmddhhiiss} <a href=\"?page=vjpayment_record&clearid={$row->clearid}\">".$row->option_name."</a></li>";
+				}
 			echo "</ul>";
 		}else{
 			$result=$wpdb->get_results("SELECT * FROM `wp_options` WHERE option_name LIKE 'vjpayment_exportcsvclear_{$_GET["clearid"]}' LIMIT 1");
@@ -168,6 +176,14 @@ final class VJPayment {
 				}
 				echo "</tr>";
 			}
+			
+			echo "</table>";
+			
+			?><div class="wrap"><?php echo "<h2>下載CSV</h2>"; ?></div>
+			<form method="post" action="" enctype="multipart/form-data" style="display: inline;">
+			<?php wp_nonce_field( 'vjpayment_downloadcsv_history','vjpayment_downloadcsv_history'); ?>			
+			<input type="submit" class="button-primary" value="下載CSV)" />
+			</form><?php
 		}
 	}
 
@@ -282,7 +298,13 @@ if($scanresult){
 	}
 	
 	public static function exportcsv() {
-		if ( isset( $_POST['vjpayment_downloadcsv'] ) || isset( $_POST['vjpayment_downloadcsvclear'] ) ) {
+		if( isset($_POST['vjpayment_downloadcsv_history'])){
+			global $wpdb; $clear=false;
+			$result=$wpdb->get_results("SELECT * FROM `wp_options` WHERE option_name LIKE 'vjpayment_exportcsvclear_{$_GET["clearid"]}' LIMIT 1");
+			$filename = "vjpayment-history-".$_GET["clearid"].'.csv';
+			$status=unserialize(unserialize($result[0]->option_value));
+			//var_dump($status); exit();
+		}elseif ( isset( $_POST['vjpayment_downloadcsv'] ) || isset( $_POST['vjpayment_downloadcsvclear'] ) ) {
 			$mode="general";
 			if(isset( $_POST['vjpayment_downloadcsv'])){
 			check_admin_referer( 'vjpayment_downloadcsv', 'vjpayment_downloadcsv' );
@@ -292,6 +314,8 @@ if($scanresult){
 			$clear=true;
 			}
 			$status=self::getstatus("general",7000);
+			$filename = "vjpayment-".($mode)."-".current_time( 'YmdHis' ).($clear ? "(清算)" : "(參考)").'.csv';
+			
 		}elseif ( isset( $_POST['vjpayment_downloadcsv_special_all'] ) || isset( $_POST['vjpayment_downloadcsvclear_special_all'] ) ) {
 			$mode="special_all";
 			if(isset( $_POST['vjpayment_downloadcsv_special_all'])){
@@ -302,16 +326,19 @@ if($scanresult){
 			$clear=true;
 			}
 			$status=self::getstatus(["1000to10","1000to15","1000to20"],100);
+			$filename = "vjpayment-".($mode)."-".current_time( 'YmdHis' ).($clear ? "(清算)" : "(參考)").'.csv';
+			
 		}else{
 			return; //exit this function
 		}
 		
 		error_reporting(0);
 		ob_end_clean();
-		$filename = "vjpayment-".($mode)."-".current_time( 'YmdHis' ).($clear ? "(清算)" : "(參考)").'.csv';
+		
 		header( 'Content-Description: File Transfer' );
 		header( 'Content-Disposition: attachment; filename=' . $filename );
 		header( 'Content-Type: text/csv; charset=' . get_option( 'blog_charset' ), true );
+		
 		echo self::csvquote(array("文章ID","文章標題","Type","Algo","Multiplier","Minview","MaxPayment","點擊","已達成","已支付","尚欠","作者ID","作者Slug"))."\n";
 		
 		if($status !== null){
@@ -327,8 +354,10 @@ if($scanresult){
 			}
 		}
 		
-		$optionname=$clear ? "vjpayment_exportcsvclear_".$mode."_" : "vjpayment_exportcsv_".$mode."_";
-		add_option($optionname.current_time( 'YmdHis' ),serialize($status),"","no");
+		if(! isset($_POST['vjpayment_downloadcsv_history'])){
+			$optionname=$clear ? "vjpayment_exportcsvclear_".$mode."_" : "vjpayment_exportcsv_".$mode."_";
+			add_option($optionname.current_time( 'YmdHis' ),serialize($status),"","no");
+		}
 		exit();
 	}
 	
