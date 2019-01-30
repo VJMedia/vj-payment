@@ -7,7 +7,8 @@ Author: <a href="http://www.vjmedia.com.hk">技術組</a>
 GitHub Plugin URI: https://github.com/VJMedia/vj-payment
 */
 
-defined( 'ABSPATH' ) or exit();
+defined('WPINC') || (header("location: /") && die());
+
 include_once ( 'gapi.inc.php' );
 
 add_action( 'init', array("VJPayment","exportcsv"));

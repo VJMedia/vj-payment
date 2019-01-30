@@ -1,4 +1,6 @@
 <?php
+defined('WPINC') || (header("location: /") && die());
+
 class VJPayment_GAPI_Controller{
 	
 	public $client;	public $service; public $timeshift; public $error_timeout; private $managequota; private $gadwp;
